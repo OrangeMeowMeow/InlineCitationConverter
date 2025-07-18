@@ -63,8 +63,8 @@ document.getElementById('conversion-form').addEventListener('submit', async func
         // CORRECTED: Properly handle asynchronous Python function
         const result = await converter(refsText, texText, bibText);
         const resultObj = result.toJs();
-        
-        // Extract output and messages
+
+        // Properly access the nested dictionary
         outputFileContent = resultObj.output;
         const conversionMessages = resultObj.messages || [];
         
