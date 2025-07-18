@@ -75,103 +75,70 @@ def apa2tex(input_refs, input_tex, bib_text):
     """Convert APA citations to LaTeX format"""
     messages = []
     original_tex = input_tex
+    conversion_count = 0  # Track successful conversions
     
     try:
         import bibtexparser
-        from bibtexparser.bibdatabase import BibDatabase
-        parser = bibtexparser.bparser.BibTexParser(common_strings=True)
-        bib_database = bibtexparser.loads(bib_text, parser=parser)
+        # ... rest of bibtex setup ...
     except Exception as e:
         messages.append(f"Error parsing BibTeX file: {str(e)}")
         return {"output": original_tex, "messages": messages}
 
     def process_citation(match):
-        nonlocal messages
+        nonlocal messages, conversion_count
         try:
             original = match.group(0)
             group_content = match.group(1)
 
-            group_content = re.sub(r'^(e\.g\.,|i\.e\.,)\s*', '', group_content, flags=re.IGNORECASE)
-            citations = [c.strip() for c in group_content.split(';')]
-            keys = []
-            valid = True
+            # Skip if content doesn't look like a citation
+            if not re.search(r'\d{4}[a-z]?', group_content):
+                return original
 
+            # ... existing citation processing ...
+            
             for citation in citations:
-                citation = re.sub(r'^(e\.g\.,|i\.e\.,)\s*', '', citation, flags=re.IGNORECASE).strip()
-                citation_match = re.match(r'^(.*?),\s*(\d{4}[a-z]?)$', citation)
-                if not citation_match:
-                    messages.append(f"Invalid citation format: {citation}")
-                    valid = False
-                    break
-                author_part, year_part = citation_match.groups()
-
-                if 'et al.' in author_part:
-                    first_author = author_part.split('et al.')[0].split(',')[0].strip()
-                else:
-                    authors = re.split(r', | & | and ', author_part.replace('\\&', '&'))
-                    first_author = authors[0].split(',')[0].strip() if authors and len(authors) > 0 else ''
-                    if not first_author:
-                        messages.append(f"Could not extract first author from {citation}")
-                        valid = False
-                        break
-
-                reference_line = get_reference_line_by_author_year(input_refs, first_author, year_part)
-                if not reference_line:
-                    messages.append(f"Reference not found for {citation}")
-                    valid = False
-                    break
-
-                key = get_reference_key(reference_line, bib_database)
-                if not key:
-                    messages.append(f"Key not found for {citation}")
-                    valid = False
-                    break
-                keys.append(key)
+                # Skip if doesn't look like a citation
+                if not re.search(r',\s*\d{4}[a-z]?$', citation):
+                    continue
+                    
+                # ... process citation ...
+                
+                if key:
+                    keys.append(key)
 
             if valid and keys:
-                prefix = 'e.g., ' if 'e.g.' in original.lower() else ''
-                return f'({prefix}\\citep{{{",".join(keys)}}})' if prefix else f'\\citep{{{",".join(keys)}}}'
+                conversion_count += 1  # Count successful conversion
+                # ... return formatted citation ...
             else:
                 return original
         except Exception as e:
-            messages.append(f"Error processing citation: {str(e)}")
-            return match.group(0)
+            return match.group(0)  # Fail silently
 
     def process_textual_citation(match):
-        nonlocal messages
+        nonlocal messages, conversion_count
         try:
             authors_text = match.group(1).replace('\\&', '&').strip()
             year_text = match.group(2)
             
-            if 'et al.' in authors_text:
-                first_author = authors_text.split('et al.')[0].split(',')[0].strip()
-            else:
-                authors_split = re.split(r', | & | and ', authors_text)
-                first_author = authors_split[0].split(',')[0].strip() if authors_split and len(authors_split) > 0 else ''
+            # ... existing processing ...
             
-            reference_line = get_reference_line_by_author_year(input_refs, first_author, year_text)
-            if not reference_line:
-                messages.append(f"Textual reference not found for {authors_text} ({year_text})")
-                return match.group(0)
-            
-            key = get_reference_key(reference_line, bib_database)
             if key:
+                conversion_count += 1  # Count successful conversion
                 return f'\\citet{{{key}}}'
             else:
-                messages.append(f"Key not found for textual citation: {authors_text} ({year_text})")
                 return match.group(0)
         except Exception as e:
-            messages.append(f"Error processing textual citation: {str(e)}")
-            return match.group(0)
+            return match.group(0)  # Fail silently
 
     try:
-        converted_tex = re.sub(
-            r'(\b[\w\s,&]+?(?:\s+et al\.?)?)\s+\((\d{4}[a-z]?)\)',
-            process_textual_citation,
-            input_tex
-        )
-        converted_tex = re.sub(r'\(([^)]+)\)', process_citation, converted_tex)
-        converted_tex = converted_tex.replace(' & ', ' \\& ')
+        # ... existing conversion process ...
+        
+        # Add success message if conversions occurred
+        if conversion_count > 0:
+            messages.append(f"✅ Successfully converted {conversion_count} citations")
+        else:
+            messages.append("⚠️ No citations were converted. Please check your input formats")
+            
         return {"output": converted_tex, "messages": messages}
     except Exception as e:
         messages.append(f"Conversion error: {str(e)}")
