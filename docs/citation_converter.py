@@ -18,7 +18,7 @@ def parse_reference(reference_line):
         return ['Author Not Found', 'Year Not Found', 'Title Not Found']
     
     try:
-        year_match = re.search(r'\((\d{4}[a-z]?)\)\.', reference_line)
+        year_match = re.search(r'\((\d{4}[a-z]?)\)\.?', reference_line)
         if not year_match:
             return ['Author Not Found', 'Year Not Found', 'Title Not Found']
         
@@ -114,7 +114,7 @@ def apa2tex(input_refs, input_tex, bib_text):
 
                 # Extract first author
                 if 'et al.' in author_part:
-                    first_author = author_part.split('et al.')[0].strip()
+                    first_author = author_part.split('et al.')[0].split(',')[0].strip()
                 else:
                     authors = re.split(r', | & | and ', author_part.replace('\\&', '&'))
                     first_author = authors[0].strip() if authors and len(authors) > 0 else ''
