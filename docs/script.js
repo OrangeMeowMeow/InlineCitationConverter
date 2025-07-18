@@ -100,16 +100,39 @@ function readFileAsText(file) {
 // Show conversion results
 function showResults(messages) {
     const messagesElement = document.getElementById('messages');
-    const downloadBtn = document.getElementById('download-btn');
-    const resultsDiv = document.getElementById('results');
+    // ... existing code ...
     
     if (messages && messages.length > 0) {
         messagesElement.classList.remove('d-none');
-        messagesElement.innerHTML = `
-            <h4 class="alert-heading">Conversion Notices</h4>
-            <p>Some citations could not be automatically converted. Please review:</p>
-            <ul>${messages.map(msg => `<li>${msg}</li>`).join('')}</ul>
-        `;
+        
+        // Separate success messages from warnings
+        const successMessages = messages.filter(m => m.includes('✅'));
+        const warningMessages = messages.filter(m => !m.includes('✅'));
+        
+        let htmlContent = '';
+        
+        // Show success message prominently
+        if (successMessages.length > 0) {
+            htmlContent += `
+                <div class="alert alert-success">
+                    <h4 class="alert-heading">Conversion Successful!</h4>
+                    <p>${successMessages.join('<br>')}</p>
+                </div>
+            `;
+        }
+        
+        // Show warnings if any
+        if (warningMessages.length > 0) {
+            htmlContent += `
+                <div class="alert alert-warning">
+                    <h4 class="alert-heading">Conversion Notices</h4>
+                    <p>Some citations could not be converted:</p>
+                    <ul>${warningMessages.map(msg => `<li>${msg}</li>`).join('')}</ul>
+                </div>
+            `;
+        }
+        
+        messagesElement.innerHTML = htmlContent;
     } else {
         messagesElement.classList.add('d-none');
     }
