@@ -109,6 +109,7 @@ def apa2tex(input_refs, input_tex, bib_text):
                     continue
                     
                 citation = re.sub(r'^(e\.g\.,|i\.e\.,)\s*', '', citation, flags=re.IGNORECASE).strip()
+                # Update regex to handle escaped ampersands
                 citation_match = re.match(r'^(.*?),\s*(\d{4}[a-z]?)$', citation)
                 if not citation_match:
                     processed_citations.append(citation)
@@ -116,11 +117,14 @@ def apa2tex(input_refs, input_tex, bib_text):
                     
                 author_part, year_part = citation_match.groups()
 
+                # Handle both escaped and unescaped ampersands
                 if 'et al.' in author_part:
-                    first_author = author_part.split('et al.')[0].split(',')[0].strip()
+                    # Remove escaping for comparison
+                    first_author = author_part.split('et al.')[0].split(',')[0].strip().replace('\\&', '&')
                 else:
-                    authors = re.split(r', | & | and ', author_part.replace('\\&', '&'))
-                    first_author = authors[0].split(',')[0].strip() if authors and len(authors) > 0 else ''
+                    # Split on both & and \&
+                    authors = re.split(r', | & | \\& | and ', author_part)
+                    first_author = authors[0].split(',')[0].strip().replace('\\&', '&') if authors and len(authors) > 0 else ''
                     if not first_author:
                         processed_citations.append(citation)
                         continue
@@ -155,14 +159,17 @@ def apa2tex(input_refs, input_tex, bib_text):
     def process_textual_citation(match):
         nonlocal messages, conversion_count
         try:
-            authors_text = match.group(1).replace('\\&', '&').strip()
+            authors_text = match.group(1).strip()
             year_text = match.group(2)
             
+            # Handle both escaped and unescaped ampersands
             if 'et al.' in authors_text:
-                first_author = authors_text.split('et al.')[0].split(',')[0].strip()
+                # Remove escaping for comparison
+                first_author = authors_text.split('et al.')[0].split(',')[0].strip().replace('\\&', '&')
             else:
-                authors_split = re.split(r', | & | and ', authors_text)
-                first_author = authors_split[0].split(',')[0].strip() if authors_split and len(authors_split) > 0 else ''
+                # Split on both & and \&
+                authors_split = re.split(r', | & | \\& | and ', authors_text)
+                first_author = authors_split[0].split(',')[0].strip().replace('\\&', '&') if authors_split and len(authors_split) > 0 else ''
             
             reference_line = get_reference_line_by_author_year(input_refs, first_author, year_text)
             if not reference_line:
@@ -172,7 +179,12 @@ def apa2tex(input_refs, input_tex, bib_text):
             key = get_reference_key(reference_line, bib_database)
             if key:
                 conversion_count += 1
-                return f'\\citet{{{key}}}'
+                # Preserve original escaping in output
+                output = f'\\citet{{{key}}}'
+                # Restore ampersand escaping if it existed in original
+                if '\\&' in authors_text:
+                    output = output.replace(' & ', ' \\& ')
+                return output
             else:
                 messages.append(f"Key not found for textual citation: {authors_text} ({year_text})")
                 return match.group(0)
@@ -181,17 +193,27 @@ def apa2tex(input_refs, input_tex, bib_text):
             return match.group(0)
 
     try:
+        # First handle textual citations (Author (Year))
         converted_tex = re.sub(
             r'(\b[\w\s,&]+?(?:\s+et al\.?)?)\s+\((\d{4}[a-z]?)\)',
             process_textual_citation,
             input_tex
         )
+        # Then handle parenthetical citations ((Author, Year; Author2, Year))
         converted_tex = re.sub(r'\(([^)]+)\)', process_citation, converted_tex)
+        
+        # Preserve existing ampersand escaping in the rest of the document
         converted_tex = converted_tex.replace(' & ', ' \\& ')
         
         # Add success message if conversions occurred
         if conversion_count > 0:
-            messages.insert(0, f"✅ Successfully converted {conversion_count} citations")
+            support_message = (
+                f"✅ Successfully converted {conversion_count} citations. "
+                "If you find this ad-free website helpful, please consider "
+                "supporting us at <a href='https://coff.ee/orangemeowmeow' "
+                "target='_blank'>coff.ee/orangemeowmeow</a>! ❤️"
+            )
+            messages.insert(0, support_message)
         else:
             messages.insert(0, "⚠️ No citations were converted. Please check your input formats")
             
