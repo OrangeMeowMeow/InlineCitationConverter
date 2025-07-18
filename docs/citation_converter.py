@@ -100,77 +100,55 @@ def apa2tex(input_refs, input_tex, bib_text):
             citations = [c.strip() for c in group_content.split(';')]
             keys = []
             valid = True
+            processed_citations = []
 
             for citation in citations:
                 # Skip if doesn't look like a citation (no year pattern)
-                if not re.search(r',\s*\d{4}[a-z]?$', citation) and not re.search(r'\d{4}[a-z]?\)$', citation):
-                    continue
-                    
-                # Handle special cases like "Section 2.5.1" that might have slipped through
-                if re.search(r'Section\s+\d+', citation, re.IGNORECASE):
+                if not re.search(r',\s*\d{4}[a-z]?$', citation):
+                    processed_citations.append(citation)
                     continue
                     
                 citation = re.sub(r'^(e\.g\.,|i\.e\.,)\s*', '', citation, flags=re.IGNORECASE).strip()
-                
-                # More flexible citation pattern
-                citation_match = re.match(r'^(.*?[^,])\s*,\s*(\d{4}[a-z]?)$', citation)
+                citation_match = re.match(r'^(.*?),\s*(\d{4}[a-z]?)$', citation)
                 if not citation_match:
-                    # Try alternative pattern without comma
-                    citation_match = re.match(r'^([^(]+?)\s*\((\d{4}[a-z]?)\)$', citation)
-                    if not citation_match:
-                        continue
+                    processed_citations.append(citation)
+                    continue
                     
-                author_part = citation_match.group(1).strip()
-                year_part = citation_match.group(2).strip()
+                author_part, year_part = citation_match.groups()
 
-                # Handle corporate authors
-                if '&' in author_part or ' and ' in author_part:
-                    # Corporate author like "S&P Global"
-                    first_author = author_part
-                elif 'et al.' in author_part:
-                    # Extract first author from "et al." citations
+                if 'et al.' in author_part:
                     first_author = author_part.split('et al.')[0].split(',')[0].strip()
-                    # Handle cases like "For instance, Price et al." by taking last name
-                    if ' ' in first_author:
-                        first_author = first_author.split()[-1]
                 else:
                     authors = re.split(r', | & | and ', author_part.replace('\\&', '&'))
-                    if authors and len(authors) > 0:
-                        first_author = authors[0].split(',')[0].strip()
-                        # Handle cases like "Reilly et al." where first author is single word
-                        if ' ' in first_author:
-                            first_author = first_author.split()[-1]
-                    else:
-                        first_author = ''
-
-                if not first_author:
-                    continue
+                    first_author = authors[0].split(',')[0].strip() if authors and len(authors) > 0 else ''
+                    if not first_author:
+                        processed_citations.append(citation)
+                        continue
 
                 reference_line = get_reference_line_by_author_year(input_refs, first_author, year_part)
                 if not reference_line:
-                    # Try matching by last name only
-                    if ' ' in first_author:
-                        last_name = first_author.split()[-1]
-                        reference_line = get_reference_line_by_author_year(input_refs, last_name, year_part)
-                    
-                    if not reference_line:
-                        messages.append(f"Reference not found for {citation}")
-                        continue
+                    messages.append(f"Reference not found for {citation}")
+                    processed_citations.append(citation)
+                    continue
 
                 key = get_reference_key(reference_line, bib_database)
                 if not key:
                     messages.append(f"Key not found for {citation}")
+                    processed_citations.append(citation)
                     continue
                     
                 keys.append(key)
-                conversion_count += 1  # Count successful conversion
+                processed_citations.append(None)  # Mark as successfully processed
 
+            # If we have at least one valid key
             if keys:
-                # Preserve prefix if present
+                conversion_count += len(keys)
                 prefix = 'e.g., ' if 'e.g.' in original.lower() else ''
-                return f'({prefix}\\citep{{{",".join(keys)}}})' if prefix else f'\\citep{{{",".join(keys)}}}'
+                return f'({prefix}\\citep{{{",".join(keys)}}})'
             else:
+                # Return original if no keys found
                 return original
+                
         except Exception as e:
             return match.group(0)
 
@@ -180,45 +158,16 @@ def apa2tex(input_refs, input_tex, bib_text):
             authors_text = match.group(1).replace('\\&', '&').strip()
             year_text = match.group(2)
             
-            # Remove introductory phrases
-            authors_text = re.sub(r'^(For instance|Similarly|Building upon|For example|In contrast|Additionally|Specifically|following|adopting|However|Our findings|further|suggesting|aligns? with|Comparison with|In this|Contrary to|While|Finally|This robust test),\s*', 
-                                  '', authors_text, flags=re.IGNORECASE)
-            
-            # Handle special cases like "noindent Bloomfield"
-            authors_text = re.sub(r'^noindent\s+', '', authors_text, flags=re.IGNORECASE)
-            
-            # Handle corporate authors
-            if '&' in authors_text or ' and ' in authors_text:
-                first_author = authors_text
-            elif 'et al.' in authors_text:
-                # Extract first author from "et al." citations
+            if 'et al.' in authors_text:
                 first_author = authors_text.split('et al.')[0].split(',')[0].strip()
-                # Handle cases like "Price et al." by taking last name
-                if ' ' in first_author:
-                    first_author = first_author.split()[-1]
             else:
                 authors_split = re.split(r', | & | and ', authors_text)
-                if authors_split and len(authors_split) > 0:
-                    first_author = authors_split[0].split(',')[0].strip()
-                    # Handle cases like "Lang and Lundholm" by taking last name
-                    if ' ' in first_author:
-                        first_author = first_author.split()[-1]
-                else:
-                    first_author = ''
-            
-            if not first_author:
-                return match.group(0)
+                first_author = authors_split[0].split(',')[0].strip() if authors_split and len(authors_split) > 0 else ''
             
             reference_line = get_reference_line_by_author_year(input_refs, first_author, year_text)
             if not reference_line:
-                # Try matching by last name only
-                if ' ' in first_author:
-                    last_name = first_author.split()[-1]
-                    reference_line = get_reference_line_by_author_year(input_refs, last_name, year_text)
-                
-                if not reference_line:
-                    messages.append(f"Textual reference not found for {authors_text} ({year_text})")
-                    return match.group(0)
+                messages.append(f"Textual reference not found for {authors_text} ({year_text})")
+                return match.group(0)
             
             key = get_reference_key(reference_line, bib_database)
             if key:
@@ -227,13 +176,13 @@ def apa2tex(input_refs, input_tex, bib_text):
             else:
                 messages.append(f"Key not found for textual citation: {authors_text} ({year_text})")
                 return match.group(0)
+                
         except Exception as e:
             return match.group(0)
 
     try:
-        # Improved regex for textual citations
         converted_tex = re.sub(
-            r'([A-Z][\w\s,&]+?(?:\s+et al\.?)?)\s+\((\d{4}[a-z]?)\)',
+            r'(\b[\w\s,&]+?(?:\s+et al\.?)?)\s+\((\d{4}[a-z]?)\)',
             process_textual_citation,
             input_tex
         )
@@ -251,7 +200,7 @@ def apa2tex(input_refs, input_tex, bib_text):
     except Exception as e:
         messages.append(f"Conversion error: {str(e)}")
         return {"output": original_tex, "messages": messages}
-
+        
 def main(refs_text, tex_text, bib_text):
     """Main conversion function"""
     try:
