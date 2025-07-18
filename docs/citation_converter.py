@@ -212,4 +212,6 @@ def main(refs_text, tex_text, bib_text):
         result = apa2tex(refs_text, tex_text, bib_text)
         return result
     except Exception as e:
-        return {"output": tex_text, "messages": [f"Critical error: {str(e)}"]}
+        import traceback
+        error_message = f"Critical error: {str(e)}\n{traceback.format_exc()}"
+        return {"output": tex_text, "messages": [error_message]}
