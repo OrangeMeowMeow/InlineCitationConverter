@@ -74,7 +74,7 @@ def get_reference_line_by_author_year(references, first_author, year_part):
 def apa2tex(input_refs, input_tex, bib_text):
     """Convert APA citations to LaTeX format"""
     messages = []
-    original_tex = input_tex  # Preserve original content
+    original_tex = input_tex
     
     try:
         import bibtexparser
@@ -178,10 +178,9 @@ def apa2tex(input_refs, input_tex, bib_text):
         return {"output": original_tex, "messages": messages}
 
 def main(refs_text, tex_text, bib_text):
-    """Main conversion function - simplified return type"""
+    """Main conversion function"""
     try:
         result = apa2tex(refs_text, tex_text, bib_text)
-        # Return a simple tuple instead of dictionary
         return (result["output"], json.dumps(result["messages"]))
     except Exception as e:
         import traceback
