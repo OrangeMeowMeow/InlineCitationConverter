@@ -54,10 +54,11 @@ document.getElementById('conversion-form').addEventListener('submit', async func
         // Run conversion in Pyodide
         const converter = pyodide.globals.get('main');
         const result = converter(refsText, texText, bibText);
-        const messages = result.toJs();
+        const resultObj = result.toJs();
         
-        outputFileContent = result.output;
-        const conversionMessages = messages.messages;
+        // Extract output and messages
+        outputFileContent = resultObj.output;
+        const conversionMessages = resultObj.messages || [];
         
         // Display results
         showResults(conversionMessages);
@@ -85,7 +86,7 @@ function showResults(messages) {
     const downloadBtn = document.getElementById('download-btn');
     const resultsDiv = document.getElementById('results');
     
-    if (messages.length > 0) {
+    if (messages && messages.length > 0) {
         messagesElement.classList.remove('d-none');
         messagesElement.innerHTML = `
             <h4 class="alert-heading">Conversion Notices</h4>
@@ -111,4 +112,5 @@ document.getElementById('reset-btn').addEventListener('click', () => {
     document.getElementById('results').classList.add('d-none');
     document.getElementById('messages').classList.add('d-none');
     document.getElementById('download-btn').classList.add('d-none');
+    outputFileContent = "";
 });
