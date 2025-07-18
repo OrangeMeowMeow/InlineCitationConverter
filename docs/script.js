@@ -59,13 +59,18 @@ document.getElementById('conversion-form').addEventListener('submit', async func
         
         // Run conversion in Pyodide
         const converter = pyodide.globals.get('main');
-        
-        // CORRECTED: Properly handle asynchronous Python function
         const result = await converter(refsText, texText, bibText);
         const resultObj = result.toJs();
-
-        // Properly access the nested dictionary
-        outputFileContent = resultObj.output;
+        
+        // SAFEGUARD: Ensure output exists or use original
+        let outputContent = resultObj.output;
+        if (typeof outputContent === 'undefined' || outputContent === null) {
+            outputContent = texText;
+            resultObj.messages = resultObj.messages || [];
+            resultObj.messages.push("Conversion failed: Using original document");
+        }
+        
+        outputFileContent = outputContent;
         const conversionMessages = resultObj.messages || [];
         
         // Display results
@@ -73,6 +78,8 @@ document.getElementById('conversion-form').addEventListener('submit', async func
     } catch (error) {
         console.error(error);
         alert(`Error: ${error.message}`);
+        outputFileContent = texText || "";  // Fallback to original content
+        showResults([`Critical error: ${error.message}`]);
     } finally {
         document.getElementById('loading').classList.add('d-none');
     }
@@ -98,7 +105,7 @@ function showResults(messages) {
         messagesElement.classList.remove('d-none');
         messagesElement.innerHTML = `
             <h4 class="alert-heading">Conversion Notices</h4>
-            <p>Some citations could not be automatically converted. Please review these messages:</p>
+            <p>Some citations could not be automatically converted. Please review:</p>
             <ul>${messages.map(msg => `<li>${msg}</li>`).join('')}</ul>
         `;
     } else {
