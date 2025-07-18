@@ -100,7 +100,8 @@ function readFileAsText(file) {
 // Show conversion results
 function showResults(messages) {
     const messagesElement = document.getElementById('messages');
-    // ... existing code ...
+    const downloadBtn = document.getElementById('download-btn');
+    const resultsDiv = document.getElementById('results');
     
     if (messages && messages.length > 0) {
         messagesElement.classList.remove('d-none');
