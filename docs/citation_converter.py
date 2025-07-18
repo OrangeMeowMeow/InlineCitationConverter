@@ -338,7 +338,7 @@ def apa2tex(input_refs, input_tex, bib_text):
     except Exception as e:
         return {"output": original_tex, "messages": [f"Conversion error: {str(e)}"]}
 
-def mainFunc(refs_text, tex_text, bib_text):
+def main(refs_text, tex_text, bib_text):
     """Main conversion function"""
     try:
         result = apa2tex(refs_text, tex_text, bib_text)
