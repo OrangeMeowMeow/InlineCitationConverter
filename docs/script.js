@@ -1,6 +1,7 @@
 // Initialize Pyodide
 let pyodide;
 let outputFileContent = "";
+let pyodideInitialization;
 
 async function initializePyodide() {
     console.log("Loading Pyodide...");
@@ -26,8 +27,10 @@ async function initializePyodide() {
     console.log("Pyodide initialized!");
 }
 
-// Initialize on page load
-initializePyodide();
+// Start initialization
+pyodideInitialization = initializePyodide().catch(err => {
+    console.error("Pyodide initialization failed:", err);
+});
 
 // Handle form submission
 document.getElementById('conversion-form').addEventListener('submit', async function(e) {
@@ -38,6 +41,9 @@ document.getElementById('conversion-form').addEventListener('submit', async func
     document.getElementById('results').classList.add('d-none');
     
     try {
+        // Wait for Pyodide to initialize
+        await pyodideInitialization;
+        
         // Read files
         const refsFile = document.getElementById('refs_file').files[0];
         const texFile = document.getElementById('tex_file').files[0];
@@ -54,7 +60,9 @@ document.getElementById('conversion-form').addEventListener('submit', async func
         // Run conversion in Pyodide
         const converter = pyodide.globals.get('main');
         const result = converter(refsText, texText, bibText);
-        const resultObj = result.toJs();
+        
+        // CORRECTED: Properly handle toJs() promise
+        const resultObj = await result.toJs();
         
         // Extract output and messages
         outputFileContent = resultObj.output;
