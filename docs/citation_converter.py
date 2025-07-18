@@ -33,7 +33,13 @@ def parse_reference(reference_line):
 
 def get_reference_key(reference_line, bib_database):
     """Find BibTeX key for a reference line"""
+    if not reference_line:
+        return None
+        
     parsed_ref = parse_reference(reference_line)
+    if not parsed_ref or len(parsed_ref) < 3:
+        return None
+        
     target_title = parsed_ref[2]
     
     for entry in bib_database.entries:
@@ -49,14 +55,19 @@ def get_reference_key(reference_line, bib_database):
 
 def get_reference_line_by_author_year(references, first_author, year_part):
     """Find reference line by author and year"""
+    if not references or not first_author or not year_part:
+        return None
+        
     for line in references.splitlines():
         line = line.strip()
         if not line:
             continue
         parsed = parse_reference(line)
+        if len(parsed) < 2:
+            continue
         ref_authors = parsed[0]
         ref_year = parsed[1]
-        first_ref_author = ref_authors.split(',')[0].strip()
+        first_ref_author = ref_authors.split(',')[0].strip() if ref_authors else None
         if first_ref_author == first_author and ref_year == year_part:
             return line
     return None
@@ -78,95 +89,103 @@ def apa2tex(input_refs, input_tex, bib_text):
     def process_citation(match):
         """Process parenthetical citations"""
         nonlocal messages
-        original = match.group(0)
-        group_content = match.group(1)
+        try:
+            original = match.group(0)
+            group_content = match.group(1)
 
-        # Remove prefixes like "e.g., "
-        group_content = re.sub(r'^(e\.g\.,|i\.e\.,)\s*', '', group_content, flags=re.IGNORECASE)
+            # Remove prefixes like "e.g., "
+            group_content = re.sub(r'^(e\.g\.,|i\.e\.,)\s*', '', group_content, flags=re.IGNORECASE)
 
-        citations = [c.strip() for c in group_content.split(';')]
-        keys = []
-        valid = True
+            citations = [c.strip() for c in group_content.split(';')]
+            keys = []
+            valid = True
 
-        for citation in citations:
-            # Clean individual citations
-            citation = re.sub(r'^(e\.g\.,|i\.e\.,)\s*', '', citation, flags=re.IGNORECASE).strip()
+            for citation in citations:
+                # Clean individual citations
+                citation = re.sub(r'^(e\.g\.,|i\.e\.,)\s*', '', citation, flags=re.IGNORECASE).strip()
 
-            # Extract author and year
-            citation_match = re.match(r'^(.*?),\s*(\d{4}[a-z]?)$', citation)
-            if not citation_match:
-                messages.append(f"Invalid citation format: {citation}")
-                valid = False
-                break
-            author_part, year_part = citation_match.groups()
+                # Extract author and year
+                citation_match = re.match(r'^(.*?),\s*(\d{4}[a-z]?)$', citation)
+                if not citation_match:
+                    messages.append(f"Invalid citation format: {citation}")
+                    valid = False
+                    break
+                author_part, year_part = citation_match.groups()
 
-            # Extract first author
-            if 'et al.' in author_part:
-                first_author = author_part.split('et al.')[0].strip()
-            else:
-                authors = re.split(r', | & | and ', author_part.replace('\\&', '&'))
-                first_author = authors[0].strip() if authors else ''
-                if not first_author:
-                    msg = f"Could not extract first author from {citation}"
+                # Extract first author
+                if 'et al.' in author_part:
+                    first_author = author_part.split('et al.')[0].strip()
+                else:
+                    authors = re.split(r', | & | and ', author_part.replace('\\&', '&'))
+                    first_author = authors[0].strip() if authors and len(authors) > 0 else ''
+                    if not first_author:
+                        msg = f"Could not extract first author from {citation}"
+                        messages.append(msg)
+                        valid = False
+                        break
+
+                # Find reference line
+                reference_line = get_reference_line_by_author_year(
+                    input_refs, first_author, year_part
+                )
+                if not reference_line:
+                    msg = f"Reference not found for {citation}"
                     messages.append(msg)
                     valid = False
                     break
 
-            # Find reference line
-            reference_line = get_reference_line_by_author_year(
-                input_refs, first_author, year_part
-            )
-            if not reference_line:
-                msg = f"Reference not found for {citation}"
-                messages.append(msg)
-                valid = False
-                break
+                # Get BibTeX key
+                key = get_reference_key(reference_line, bib_database)
+                if not key:
+                    msg = f"Key not found for {citation}"
+                    messages.append(msg)
+                    valid = False
+                    break
+                keys.append(key)
 
-            # Get BibTeX key
-            key = get_reference_key(reference_line, bib_database)
-            if not key:
-                msg = f"Key not found for {citation}"
-                messages.append(msg)
-                valid = False
-                break
-            keys.append(key)
-
-        if valid:
-            # Preserve prefix if present
-            prefix = 'e.g., ' if 'e.g.' in original.lower() else ''
-            return f'({prefix}\\citep{{{",".join(keys)}}})' if prefix else f'\\citep{{{",".join(keys)}}}'
-        else:
-            return original
+            if valid and keys:
+                # Preserve prefix if present
+                prefix = 'e.g., ' if 'e.g.' in original.lower() else ''
+                return f'({prefix}\\citep{{{",".join(keys)}}})' if prefix else f'\\citep{{{",".join(keys)}}}'
+            else:
+                return original
+        except Exception as e:
+            messages.append(f"Error processing citation: {str(e)}")
+            return match.group(0)
 
     def process_textual_citation(match):
         """Process textual citations"""
         nonlocal messages
-        authors_text = match.group(1).replace('\\&', '&').strip()
-        year_text = match.group(2)
-        
-        # Extract first author
-        if 'et al.' in authors_text:
-            first_author = authors_text.split('et al.')[0].strip()
-        else:
-            authors_split = re.split(r', | & | and ', authors_text)
-            first_author = authors_split[0].strip() if authors_split else ''
-        
-        # Find reference line
-        reference_line = get_reference_line_by_author_year(
-            input_refs, first_author, year_text
-        )
-        if not reference_line:
-            msg = f"Textual reference not found for {authors_text} ({year_text})"
-            messages.append(msg)
-            return match.group(0)
-        
-        # Get BibTeX key
-        key = get_reference_key(reference_line, bib_database)
-        if key:
-            return f'\\citet{{{key}}}'
-        else:
-            msg = f"Key not found for textual citation: {authors_text} ({year_text})"
-            messages.append(msg)
+        try:
+            authors_text = match.group(1).replace('\\&', '&').strip()
+            year_text = match.group(2)
+            
+            # Extract first author
+            if 'et al.' in authors_text:
+                first_author = authors_text.split('et al.')[0].strip()
+            else:
+                authors_split = re.split(r', | & | and ', authors_text)
+                first_author = authors_split[0].strip() if authors_split and len(authors_split) > 0 else ''
+            
+            # Find reference line
+            reference_line = get_reference_line_by_author_year(
+                input_refs, first_author, year_text
+            )
+            if not reference_line:
+                msg = f"Textual reference not found for {authors_text} ({year_text})"
+                messages.append(msg)
+                return match.group(0)
+            
+            # Get BibTeX key
+            key = get_reference_key(reference_line, bib_database)
+            if key:
+                return f'\\citet{{{key}}}'
+            else:
+                msg = f"Key not found for textual citation: {authors_text} ({year_text})"
+                messages.append(msg)
+                return match.group(0)
+        except Exception as e:
+            messages.append(f"Error processing textual citation: {str(e)}")
             return match.group(0)
 
     # Process LaTeX content
@@ -189,5 +208,8 @@ def apa2tex(input_refs, input_tex, bib_text):
 
 def main(refs_text, tex_text, bib_text):
     """Main conversion function"""
-    result = apa2tex(refs_text, tex_text, bib_text)
-    return result
+    try:
+        result = apa2tex(refs_text, tex_text, bib_text)
+        return result
+    except Exception as e:
+        return {"output": tex_text, "messages": [f"Critical error: {str(e)}"]}
