@@ -347,3 +347,5 @@ def main(refs_text, tex_text, bib_text):
         import traceback
         error_trace = traceback.format_exc()
         return (tex_text, json.dumps([f"Critical error: {str(e)}\n{error_trace}"]))
+
+main = main
