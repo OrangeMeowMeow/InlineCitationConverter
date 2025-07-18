@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaTeX Citation Converter</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="card shadow-lg">
+            <div class="card-header bg-primary text-white">
+                <h1 class="card-title text-center">LaTeX Citation Converter</h1>
+                <p class="text-center mb-0">Convert APA citations to LaTeX format</p>
+            </div>
+            
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h2 class="mb-4">Upload Your Files</h2>
+                        
+                        <!-- Privacy Banner -->
+                        <div class="privacy-banner bg-light p-3 rounded mb-4">
+                            <div class="d-flex">
+                                <div class="me-3">🔒</div>
+                                <div>
+                                    <h5>100% Browser-Based Processing</h5>
+                                    <p class="mb-0">Your files never leave your computer. All processing happens in your browser.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <form id="conversion-form">
+                            <div class="mb-3">
+                                <label for="refs_file" class="form-label">
+                                    References Text File (Reference.txt)
+                                </label>
+                                <input class="form-control" type="file" id="refs_file" required>
+                                <div class="form-text">Text file containing your references</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="tex_file" class="form-label">
+                                    Main LaTeX File (Main.tex)
+                                </label>
+                                <input class="form-control" type="file" id="tex_file" required>
+                                <div class="form-text">Your main LaTeX document</div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="bib_file" class="form-label">
+                                    BibTeX File (Reference.bib)
+                                </label>
+                                <input class="form-control" type="file" id="bib_file" required>
+                                <div class="form-text">BibTeX file with citation keys</div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100 btn-lg">
+                                Convert Citations
+                            </button>
+                        </form>
+                        
+                        <!-- Loading Indicator -->
+                        <div id="loading" class="mt-4 text-center d-none">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Processing files... This may take a minute</p>
+                        </div>
+                        
+                        <!-- Results -->
+                        <div id="results" class="mt-4 d-none">
+                            <div id="messages" class="alert alert-warning d-none"></div>
+                            <a id="download-btn" class="btn btn-success w-100 btn-lg mb-3 d-none">
+                                Download Converted LaTeX File
+                            </a>
+                            <button id="reset-btn" class="btn btn-outline-secondary w-100">
+                                Convert Another Document
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="instructions p-4 bg-light rounded">
+                            <h3>How to Use</h3>
+                            <ol class="mt-4">
+                                <li>Prepare your three files:
+                                    <ul>
+                                        <li><strong>Reference.txt</strong> - Text version of references</li>
+                                        <li><strong>Main.tex</strong> - Your main LaTeX document</li>
+                                        <li><strong>Reference.bib</strong> - BibTeX file with citation keys</li>
+                                    </ul>
+                                </li>
+                                <li>Upload all three files using the form</li>
+                                <li>Click "Convert Citations" to process</li>
+                                <li>Review any conversion messages</li>
+                                <li>Download the converted LaTeX file</li>
+                            </ol>
+                            
+                            <div class="mt-4">
+                                <h4>Requirements</h4>
+                                <ul>
+                                    <li>Ensure your citations are in APA format: (Author, Year)</li>
+                                    <li>Multiple citations should be separated by semicolons</li>
+                                    <li>Textual citations should be in "Author et al. (Year)" format</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="security-badges mt-4 text-center">
+                                <div class="d-inline-block bg-white p-3 rounded shadow-sm">
+                                    <div class="fs-1 text-primary mb-2">🔒</div>
+                                    <span class="d-block fw-bold">100% Private</span>
+                                    <small class="text-muted">Files never leave your browser</small>
+                                </div>
+                                
+                                <div class="d-inline-block bg-white p-3 rounded shadow-sm mx-3">
+                                    <div class="fs-1 text-primary mb-2">🚀</div>
+                                    <span class="d-block fw-bold">No Installation</span>
+                                    <small class="text-muted">Runs directly in your browser</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-footer text-center text-muted">
+                <small>LaTeX Citation Converter &copy; 2023 - For Academic Use</small>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
