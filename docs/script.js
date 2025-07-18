@@ -59,10 +59,10 @@ document.getElementById('conversion-form').addEventListener('submit', async func
         
         // Run conversion in Pyodide
         const converter = pyodide.globals.get('main');
-        const result = converter(refsText, texText, bibText);
         
-        // CORRECTED: Properly handle toJs() promise
-        const resultObj = await result.toJs();
+        // CORRECTED: Properly handle asynchronous Python function
+        const result = await converter(refsText, texText, bibText);
+        const resultObj = result.toJs();
         
         // Extract output and messages
         outputFileContent = resultObj.output;
