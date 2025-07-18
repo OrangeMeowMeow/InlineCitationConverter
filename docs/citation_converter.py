@@ -207,11 +207,17 @@ def apa2tex(input_refs, input_tex, bib_text):
         return {"output": input_tex, "messages": messages}
 
 def main(refs_text, tex_text, bib_text):
-    """Main conversion function"""
     try:
         result = apa2tex(refs_text, tex_text, bib_text)
-        return result
+        # Return a simple dictionary instead of nested structure
+        return {
+            "output": result["output"],
+            "messages": result["messages"]
+        }
     except Exception as e:
         import traceback
         error_message = f"Critical error: {str(e)}\n{traceback.format_exc()}"
-        return {"output": tex_text, "messages": [error_message]}
+        return {
+            "output": tex_text,
+            "messages": [error_message]
+        }
