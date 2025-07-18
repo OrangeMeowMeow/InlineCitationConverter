@@ -1,0 +1,87 @@
+body {
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    padding: 1.5rem;
+}
+
+.card-title {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.instructions {
+    border-left: 4px solid #0d6efd;
+    height: 100%;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    transition: all 0.3s ease;
+    padding: 0.75rem;
+    font-weight: 600;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+}
+
+.alert {
+    border-radius: 8px;
+}
+
+.form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.privacy-banner {
+    border: 1px solid #d1e7dd;
+    background-color: #d1e7dd;
+    border-radius: 8px;
+}
+
+.security-badges .d-inline-block {
+    margin-bottom: 10px;
+    transition: transform 0.3s ease;
+    border-radius: 8px;
+}
+
+.security-badges .d-inline-block:hover {
+    transform: translateY(-5px);
+}
+
+#loading {
+    padding: 2rem;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+#results {
+    transition: all 0.3s ease;
+}
+
+.card-footer {
+    background-color: rgba(13, 110, 253, 0.05);
+}
