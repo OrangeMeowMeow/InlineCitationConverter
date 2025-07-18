@@ -18,6 +18,7 @@ def parse_reference(reference_line):
         return ['Author Not Found', 'Year Not Found', 'Title Not Found']
     
     try:
+        # FIX: Allow optional period after year
         year_match = re.search(r'\((\d{4}[a-z]?)\)\.?', reference_line)
         if not year_match:
             return ['Author Not Found', 'Year Not Found', 'Title Not Found']
@@ -67,7 +68,8 @@ def get_reference_line_by_author_year(references, first_author, year_part):
             continue
         ref_authors = parsed[0]
         ref_year = parsed[1]
-        first_ref_author = ref_authors.split(',')[0].strip() if ref_authors else None
+        # FIX: Handle "et al." and various author formats
+        first_ref_author = ref_authors.split(',')[0].split('&')[0].split(' and ')[0].strip()
         if first_ref_author == first_author and ref_year == year_part:
             return line
     return None
@@ -114,10 +116,11 @@ def apa2tex(input_refs, input_tex, bib_text):
 
                 # Extract first author
                 if 'et al.' in author_part:
+                    # FIX: Extract first author from "et al." citations
                     first_author = author_part.split('et al.')[0].split(',')[0].strip()
                 else:
                     authors = re.split(r', | & | and ', author_part.replace('\\&', '&'))
-                    first_author = authors[0].strip() if authors and len(authors) > 0 else ''
+                    first_author = authors[0].split(',')[0].strip() if authors and len(authors) > 0 else ''
                     if not first_author:
                         msg = f"Could not extract first author from {citation}"
                         messages.append(msg)
@@ -162,10 +165,11 @@ def apa2tex(input_refs, input_tex, bib_text):
             
             # Extract first author
             if 'et al.' in authors_text:
-                first_author = authors_text.split('et al.')[0].strip()
+                # FIX: Extract first author from "et al." citations
+                first_author = authors_text.split('et al.')[0].split(',')[0].strip()
             else:
                 authors_split = re.split(r', | & | and ', authors_text)
-                first_author = authors_split[0].strip() if authors_split and len(authors_split) > 0 else ''
+                first_author = authors_split[0].split(',')[0].strip() if authors_split and len(authors_split) > 0 else ''
             
             # Find reference line
             reference_line = get_reference_line_by_author_year(
@@ -207,9 +211,9 @@ def apa2tex(input_refs, input_tex, bib_text):
         return {"output": input_tex, "messages": messages}
 
 def main(refs_text, tex_text, bib_text):
+    """Main conversion function"""
     try:
         result = apa2tex(refs_text, tex_text, bib_text)
-        # Return a simple dictionary instead of nested structure
         return {
             "output": result["output"],
             "messages": result["messages"]
